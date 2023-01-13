@@ -44,6 +44,7 @@ class QStandardItem;
 class QMenu;
 class ConsoleImpl;
 class ConsoleDragModel;
+class QIcon;
 
 #define UNUSED_ARG(x) (void) (x)
 

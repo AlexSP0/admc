@@ -94,7 +94,7 @@ void PolicyOUImpl::fetch(const QModelIndex &index) {
         const QString base = dn;
         const SearchScope scope = SearchScope_Children;
         const QString filter = filter_CONDITION(Condition_Equals, ATTRIBUTE_OBJECT_CLASS, CLASS_OU);
-        const QList<QString> attributes = console_object_search_attributes();
+        QList<QString> attributes = console_object_search_attributes();
 
         const QHash<QString, AdObject> results = ad.search(base, scope, filter, attributes);
 
@@ -176,7 +176,6 @@ void PolicyOUImpl::activate(const QModelIndex &index) {
 
 QList<QAction *> PolicyOUImpl::get_all_custom_actions() const {
     QList<QAction *> out;
-
     update_gp_options_check_state();
     out.append(create_ou_action);
     out.append(create_and_link_gpo_action);
@@ -191,7 +190,6 @@ QSet<QAction *> PolicyOUImpl::get_custom_actions(const QModelIndex &index, const
     UNUSED_ARG(index);
 
     QSet<QAction *> out;
-
     update_gp_options_check_state();
     if (single_selection) {
         out.insert(create_ou_action);
@@ -437,14 +435,24 @@ void PolicyOUImpl::change_gp_options() {
     if (ad_failed(ad, console)) {
         return;
     }
-    const QString dn = console->get_current_scope_item().data(PolicyOURole_DN).toString();
+
+    QStandardItem *currentItem = console->get_item(console->get_current_scope_item());
+    const QString dn = currentItem->data(PolicyOURole_DN).toString();
 
     bool checked = change_gp_options_action->isChecked();
     bool res;
-    if (checked) {
+
+    QIcon icon_to_set;
+
+    if (checked)
+    {
         res = ad.attribute_replace_string(dn, ATTRIBUTE_GPOPTIONS, GPOPTIONS_BLOCK_INHERITANCE);
-    } else {
+        icon_to_set = currentItem->data(PolicyOURole_OverlappedInheritanceIcon).value<QIcon>();
+    }
+    else
+    {
         res = ad.attribute_replace_string(dn, ATTRIBUTE_GPOPTIONS, GPOPTIONS_INHERIT);
+        icon_to_set = currentItem->data(PolicyOURole_CleanIcon).value<QIcon>();
     }
 
     if (!res) {
@@ -452,24 +460,21 @@ void PolicyOUImpl::change_gp_options() {
         change_gp_options_action->toggle();
         return;
     }
+    currentItem->setData(checked, PolicyOURole_Inheritance_Block);
+    currentItem->setIcon(icon_to_set);
 }
 
-void PolicyOUImpl::update_gp_options_check_state() const {
-    AdInterface ad;
-    if (ad_failed(ad, console)) {
-        return;
-    }
 
-    const QString dn = console->get_current_scope_item().data(PolicyOURole_DN).toString();
-    AdObject object = ad.search_object(dn, {ATTRIBUTE_GPOPTIONS});
-    if (object.is_empty()) {
+void PolicyOUImpl::update_gp_options_check_state() const
+{
+    QVariant checked = console->get_current_scope_item().data(PolicyOURole_Inheritance_Block);
+    if (checked.isValid())
+    {
+        change_gp_options_action->setEnabled(true);
+        change_gp_options_action->setChecked(checked.toBool());
+    }
+    else
         change_gp_options_action->setDisabled(true);
-        return;
-    }
-
-    change_gp_options_action->setEnabled(true);
-    bool checked = (object.get_string(ATTRIBUTE_GPOPTIONS) == GPOPTIONS_BLOCK_INHERITANCE);
-    change_gp_options_action->setChecked(checked);
 }
 
 void PolicyOUImpl::update_ou_enforced_and_disabled_policies(const Gplink &gplink, const QModelIndex &ou_index)
@@ -490,8 +495,24 @@ void PolicyOUImpl::update_ou_enforced_and_disabled_policies(const Gplink &gplink
 
 void policy_ou_impl_load_item_data(QStandardItem *item, const AdObject &object) {
     const QIcon icon = get_object_icon(object);
-    item->setIcon(icon);
+
+    QIcon overlapped_inheritance_icon = overlay_scope_item_icon(icon, QIcon::fromTheme("changes-prevent"),
+                                                                QSize(10, 10), QPoint(6, 6));
+    item->setData(QVariant::fromValue(overlapped_inheritance_icon), PolicyOURole_OverlappedInheritanceIcon);
+    item->setData(QVariant::fromValue(icon), PolicyOURole_CleanIcon);
+
+    if (object.get_string(ATTRIBUTE_GPOPTIONS) == GPOPTIONS_BLOCK_INHERITANCE)
+    {
+        item->setIcon(overlapped_inheritance_icon);
+    }
+    else
+    {
+        item->setIcon(icon);
+    }
 
     const QString dn = object.get_dn();
     item->setData(dn, PolicyOURole_DN);
+
+    bool inheritance_is_blocked = object.get_int(ATTRIBUTE_GPOPTIONS);
+    item->setData(inheritance_is_blocked, PolicyOURole_Inheritance_Block);
 }
