@@ -44,6 +44,7 @@ class QStandardItem;
 class QMenu;
 class ConsoleImpl;
 class ConsoleDragModel;
+class QIcon;
 
 #define UNUSED_ARG(x) (void) (x)
 
@@ -70,6 +71,15 @@ enum StandardAction {
     StandardAction_Print,
     StandardAction_Refresh,
     StandardAction_Properties,
+};
+
+//Enums positions where scope item icon can be overlayed
+//by another icon
+enum IconOverlayPosition {
+    IconOverlayPosition_TopLeft,
+    IconOverlayPosition_BottomLeft,
+    IconOverlayPosition_TopRight,
+    IconOverlayPosition_BottomRight
 };
 
 class ConsoleWidgetActions final {
@@ -192,5 +202,9 @@ private:
 
 int console_item_get_type(const QModelIndex &index);
 bool console_item_get_was_fetched(const QModelIndex &index);
+QIcon overlay_scope_item_icon(const QIcon &clean_icon, const QIcon &overlay_icon,
+                              IconOverlayPosition position = IconOverlayPosition_BottomRight);
+QIcon overlay_scope_item_icon(const QIcon &clean_icon, const QIcon &overlay_icon,
+                              const QSize &overlay_icon_size, const QPoint &pos);
 
 #endif /* CONSOLE_WIDGET_H */

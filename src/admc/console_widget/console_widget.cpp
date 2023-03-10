@@ -39,6 +39,7 @@
 #include <QToolBar>
 #include <QTreeView>
 #include <QVBoxLayout>
+#include <QPainter>
 
 #include <algorithm>
 
@@ -1364,4 +1365,49 @@ bool console_item_get_was_fetched(const QModelIndex &index) {
 
 QString results_state_name(const int type) {
     return QString("RESULTS_STATE_%1").arg(type);
+}
+
+QIcon overlay_scope_item_icon(const QIcon &clean_icon, const QIcon &overlay_icon, IconOverlayPosition position)
+{
+    QIcon overlapped_icon;
+    //Icon looks not distorted with 16x16 size
+    QPixmap original_pixmap = clean_icon.pixmap(16, 16);
+    QPixmap overlay_pixmap = overlay_icon.pixmap(10, 10);
+
+    QPainter painter(&original_pixmap);
+    switch (position)
+    {
+    case IconOverlayPosition_BottomLeft:
+        painter.drawPixmap(0, original_pixmap.height() - 8, overlay_pixmap);
+        break;
+    case IconOverlayPosition_TopLeft:
+        painter.drawPixmap(0, 0, overlay_pixmap);
+        break;
+    case IconOverlayPosition_TopRight:
+        painter.drawPixmap(original_pixmap.width() - 8, 0, overlay_pixmap);
+        break;
+    case IconOverlayPosition_BottomRight:
+        painter.drawPixmap(original_pixmap.width() - 8, original_pixmap.height() - 8, overlay_pixmap);
+        break;
+    default:
+        break;
+    }
+
+    overlapped_icon.addPixmap(original_pixmap);
+
+    return overlapped_icon;
+}
+
+QIcon overlay_scope_item_icon(const QIcon &clean_icon, const QIcon &overlay_icon, const QSize &overlay_icon_size, const QPoint &pos)
+{
+    QIcon overlapped_icon;
+    //Icon looks not distorted with 16x16 size
+    QPixmap original_pixmap = clean_icon.pixmap(16, 16);
+    QPixmap overlay_pixmap = overlay_icon.pixmap(overlay_icon_size);
+
+    QPainter painter(&original_pixmap);
+    painter.drawPixmap(pos.x(), pos.y(), overlay_pixmap);
+
+    overlapped_icon.addPixmap(original_pixmap);
+    return overlapped_icon;
 }
