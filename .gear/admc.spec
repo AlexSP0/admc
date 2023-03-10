@@ -1,7 +1,7 @@
 %define _unpackaged_files_terminate_build 1
 
 Name: admc
-Version: 0.11.2
+Version: 0.11.3
 Release: alt1
 
 Summary: Active Directory Management Center
